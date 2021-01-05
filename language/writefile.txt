@@ -1,0 +1,3 @@
+Python Power!
+Don't forget the newline character or else your text will be smashed on one line.
+And I mean for every new line. You miss one and you'll be in trouble.
