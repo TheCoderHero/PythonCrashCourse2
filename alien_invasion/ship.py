@@ -1,9 +1,11 @@
 import pygame
+from pygame.sprite import Sprite
 
 # class to handle ship objects
-class Ship:
+class Ship(Sprite):
     # Initialize a ship and pass it the game instance
     def __init__(self, ai_game):
+        super().__init__()
         # Ships screen = the game screen
         self.screen = ai_game.screen
         # Set the ship's settings to the game's settings

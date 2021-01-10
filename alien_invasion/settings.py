@@ -3,8 +3,8 @@ class Settings:
     # Initialize the game settings (STATIC) these don't change
     def __init__(self):
         # Screen Settings
-        self.screen_width = 1200
-        self.screen_height = 800
+        self.screen_width = 1920
+        self.screen_height = 1080
         self.bg_color = (230, 230, 230)
 
         # Ship Settings
@@ -21,6 +21,8 @@ class Settings:
 
         # Aliens speed up after each fleet is destroyed
         self.speedup_scale = 1.1
+        # Alien point value increases after each level
+        self.score_scale = 1.5
         # This function re-initializes settings that change
         self.initialize_dynamic_settings()
 
@@ -37,3 +39,4 @@ class Settings:
         self.ship_speed *= self.speedup_scale
         self.bullet_speed *= self.speedup_scale
         self.alien_speed *= self.speedup_scale
+        self.alein_points = int(self.alien_points * self.score_scale)

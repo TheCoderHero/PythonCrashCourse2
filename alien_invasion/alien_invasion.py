@@ -62,6 +62,29 @@ class AlienInvasion:
             # Update the screen as soon as the game loads
             self._update_screen()
 
+    def _check_aliens_bottom(self):
+        screen_rect = self.screen.get_rect()
+        for alien in self.aliens.sprites():
+            if alien.rect.bottom >= screen_rect.bottom:
+                self._ship_hit()
+                break
+
+    def _check_bullet_alien_collisions(self):
+        # Check if any element from the bullets group and any element of the aliens group overlap, then delete them
+        # pygame.sprite.groupcollide(GroupA, GroupB, DeleteA_bool, DeleteB_bool)
+        collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        if collisions:
+            for aliens in collisions.values():
+                self.stats.score += self.settings.alien_points * len(aliens)
+            self.sb.prep_score()
+            self.sb.check_high_score()
+        if not self.aliens:
+            self.bullets.empty()
+            self._create_fleet()
+            self.settings.increase_speed()
+            self.stats.level += 1
+            self.sb.prep_level()
+
     def _check_events(self):
         # Event loop controlled by the run_game() function
         for event in pygame.event.get():
@@ -77,6 +100,12 @@ class AlienInvasion:
             elif event.type == pygame.KEYUP:
                 self._check_keyup_events(event)
 
+    def _check_fleet_edges(self):
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
+
     def _check_keydown_events(self, event):
         if event.key == pygame.K_RIGHT:
             self.ship.moving_right = True
@@ -86,7 +115,6 @@ class AlienInvasion:
             sys.exit()
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()
-
 
     def _check_keyup_events(self, event):
         if event.key == pygame.K_RIGHT:
@@ -105,58 +133,12 @@ class AlienInvasion:
             self.ship.center_ship()
             self.stats.game_active = True
             self.sb.prep_score()
+            self.sb.prep_level()
+            self.sb.prep_ships()
+            if self.stats.score > self.stats.highest_score:
+                with open('highscore.txt', 'w') as file_object:
+                    file_object.write(str(self.stats.high_score))
             self.settings.initialize_dynamic_settings()
-
-    def _fire_bullet(self):
-        # If player has not reached max allowed bullets...
-        if len(self.bullets) < self.settings.bullets_allowed:
-            # Create a new Bullet
-            new_bullet = Bullet(self)
-            # Add new Bullet to the Bullets Group
-            self.bullets.add(new_bullet)
-
-    def _update_bullets(self):
-        self.bullets.update()
-        # Delete Bullets off screen
-        for bullet in self.bullets.copy(): # Can not modify a list from FOR LOOP so we make a copy
-            if bullet.rect.bottom <= 0: # if bullet has reached the top of the screen
-                self.bullets.remove(bullet) # We modify the actual list (not the copy)
-        # print(len(self.bullets))
-        self._check_bullet_alien_collisions()
-
-    def _check_bullet_alien_collisions(self):
-        # Check if any element from the bullets group and any element of the aliens group overlap, then delete them
-        # pygame.sprite.groupcollide(GroupA, GroupB, DeleteA_bool, DeleteB_bool)
-        collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
-        if collisions:
-            for aliens in collisions.values():
-                self.stats.score += self.settings.alien_points * len(aliens)
-            self.sb.prep_score()
-        if not self.aliens:
-            self.bullets.empty()
-            self._create_fleet()
-            self.settings.increase_speed()
-
-    def _update_aliens(self):
-        self._check_fleet_edges()
-        self.aliens.update()
-        # pygame.sprite.spritecollideany(SpriteA, GroupB)
-        if pygame.sprite.spritecollideany(self.ship, self.aliens):
-            self._ship_hit()
-        self._check_aliens_bottom()
-
-    def _check_fleet_edges(self):
-        for alien in self.aliens.sprites():
-            if alien.check_edges():
-                self._change_fleet_direction()
-                break
-
-    def _check_aliens_bottom(self):
-        screen_rect = self.screen.get_rect()
-        for alien in self.aliens.sprites():
-            if alien.rect.bottom >= screen_rect.bottom:
-                self._ship_hit()
-                break
 
     def _change_fleet_direction(self):
         for alien in self.aliens.sprites():
@@ -186,9 +168,18 @@ class AlienInvasion:
         alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
         self.aliens.add(alien)
 
+    def _fire_bullet(self):
+        # If player has not reached max allowed bullets...
+        if len(self.bullets) < self.settings.bullets_allowed:
+            # Create a new Bullet
+            new_bullet = Bullet(self)
+            # Add new Bullet to the Bullets Group
+            self.bullets.add(new_bullet)
+
     def _ship_hit(self):
         if self.stats.ships_left > 0:
             self.stats.ships_left -= 1
+            self.sb.prep_ships()
             self.aliens.empty()
             self.bullets.empty()
             self._create_fleet()
@@ -197,6 +188,23 @@ class AlienInvasion:
         else:
             self.stats.game_active = False
             pygame.mouse.set_visible(True)
+
+    def _update_aliens(self):
+        self._check_fleet_edges()
+        self.aliens.update()
+        # pygame.sprite.spritecollideany(SpriteA, GroupB)
+        if pygame.sprite.spritecollideany(self.ship, self.aliens):
+            self._ship_hit()
+        self._check_aliens_bottom()
+
+    def _update_bullets(self):
+        self.bullets.update()
+        # Delete Bullets off screen
+        for bullet in self.bullets.copy(): # Can not modify a list from FOR LOOP so we make a copy
+            if bullet.rect.bottom <= 0: # if bullet has reached the top of the screen
+                self.bullets.remove(bullet) # We modify the actual list (not the copy)
+        # print(len(self.bullets))
+        self._check_bullet_alien_collisions()
 
     def _update_screen(self):
         # Redraw the screen during each pass through the loop
